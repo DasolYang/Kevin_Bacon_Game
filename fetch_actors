@@ -26,7 +26,7 @@ def fetch_actors_list(url):
     
     actor_lists = [] # to append data
     for container in containers:
-        name = container.a.text.strip() # asign only name
+        name = container.a.text.strip() # assign only name
         actor_number_url = container.a['href'] # get data for id
         actor_number = extract_name_number(actor_number_url)
         actor_list = {'Name':name, 'actor_number':actor_number}
