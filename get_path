@@ -1,0 +1,84 @@
+# get data from text file
+# get the shortest path between two actors
+
+import csv
+import os
+import networkx as nx
+
+def actor_info():
+    # actor's name and identity number
+    actor_name_number = {}
+    with open('kevin_project/actors_list_main.txt',encoding='utf-8') as fin:
+        reader = csv.reader(fin)
+        reader = filter(None, reader) # remove empty lists
+        for name, number in reader:
+            actor_name_number[name] = number
+    return actor_name_number
+
+def actor_list_by_movie():
+    actors_by_movie = {}
+    for actor_file in os.scandir('kevin_project'):
+        # continue if file name does not start with actor_ or end with _list.txt
+        if not actor_file.name.startswith('actor_') or not actor_file.name.endswith('_list.txt'):
+            continue
+        
+        with open(os.path.join('kevin_project', actor_file.name), encoding='utf-8') as fin:
+            reader = csv.reader(fin)
+            reader = filter(None, reader) # remove empty lists
+            for actor_number, movie_number, movie_name in reader:
+                # movie number: [actor numbers]
+                actors_by_movie.setdefault(movie_number, []).append(actor_number)
+        
+    return actors_by_movie
+            
+
+def actor_to_actor(actors_by_movie):
+    actor_to_actor = {}
+    
+    for movie_code, actor_number_list in actors_by_movie.items():
+        # number of actors in a movie
+        num_actors = len(actor_number_list)
+        
+        for i in range(num_actors):
+            actor_i = actor_number_list[i]
+            # to get other people in the same movie
+            for j in range(i+1, num_actors):
+                actor_j = actor_number_list[j]
+                # avoid same person
+                if actor_i == actor_j:
+                    continue
+                # connect two people
+                edge_id = tuple(sorted((actor_i,actor_j)))
+                actor_to_actor[edge_id] = actor_to_actor.setdefault(edge_id, 0) +1
+    return actor_to_actor
+
+def construct_graph(actor_to_actor):
+    G = nx.Graph()
+    
+    for edge, freq in actor_to_actor.items():
+        # two actors
+        actor_i, actor_j = edge
+        G.add_edge(actor_i, actor_j)
+    return G
+
+def get_path(g, movie_actor, name1, name2):
+    # find number of actor
+    number_1 = movie_actor[name1] 
+    number_2 = movie_actor[name2]
+    # get shortest path between two actors
+    return nx.shortest_path_length(g, number_1, number_2)
+
+
+actor_name_code = actor_info()
+movie_actor = actor_list_by_movie()
+act_to_act = actor_to_actor(movie_actor)
+G = construct_graph(act_to_act)
+#nx.draw(G, with_labels=True) # too many
+
+print(get_path(G, actor_name_number,'Neraida Bega', 'Léa Seydoux'))
+print(get_path(G, actor_name_number,'Neraida Bega', 'Anita Briem'))
+print(get_path(G, actor_name_number,'Adrianne Palicki', 'Cillian Murphy'))
+print(get_path(G, actor_name_number,'Adrianne Palicki', 'Paz Vega'))
+# 2, 3, 1, 1
+
+
