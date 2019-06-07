@@ -1,0 +1,52 @@
+# scraping data from IMDb website
+# fetching actor's name and identitity number
+
+import csv
+import os
+from bs4 import BeautifulSoup as soup
+from urllib.request import urlopen
+
+def extract_name_number(url):
+    # find 'nm' and str starts after length of 'nm' to get only code
+    actor_number = url[url.find('nm')+len('nm'):]
+    return actor_number
+
+def fetch_actors_list(url):
+    # fetch data from url
+    response = urlopen(url)
+    page = response.read()
+    response.close()
+    # HTML parsing
+    p_soup = soup(page, "html.parser")
+    
+    # find all
+    containers = p_soup.findAll("h3",{"class":"lister-item-header"})
+    
+    container = containers[0] # assign only first information of actor
+    
+    actor_lists = [] # to append data
+    for container in containers:
+        name = container.a.text.strip() # asign only name
+        actor_number_url = container.a['href'] # get data for id
+        actor_number = extract_name_number(actor_number_url)
+        actor_list = {'Name':name, 'actor_number':actor_number}
+        actor_lists.append(actor_list)
+    return actor_lists
+
+def fetch_actors_pages():
+    base_url = 'https://www.imdb.com/search/name?gender=male,female&start={}&ref_=rlm'
+    
+    if not os.path.isdir('kevin_project'):
+        os.mkdir('kevin_project') # make directory
+        
+    with open('kevin_project/actors_list_main.txt', 'w', encoding='utf8') as fout:
+        writer = csv.writer(fout) # write as csv file
+        for page_number in range(1,300,50): # page change by 50
+            actor_list = fetch_actors_list(base_url.format(page_number))
+        
+            for actor in actor_list:
+                writer.writerow([actor['Name'], actor['actor_number']])
+    
+fetch_actors_pages()
+
+
