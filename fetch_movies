@@ -1,0 +1,52 @@
+# scraping data from IMDb website
+# fetching movie name and identitity number
+
+import csv
+from bs4 import BeautifulSoup as soup
+from urllib.request import urlopen
+
+def extract_name_code(url):
+    # find 'nm' and str starts after length of 'nm' to get only code
+    # assign until last digit :-1 to remove '/'
+    movie_number = url[url.find('tt')+len('tt'):-1]
+    return movie_number
+
+def fetch_movie_list(actor_number):
+    base_url = 'https://www.imdb.com/name/nm{}/'.format(actor_number)
+    
+    response = urlopen(base_url)
+    page = response.read()
+    response.close()
+    # HTML parsing
+    p_soup = soup(page, "html.parser")
+    # find all
+    containers = p_soup.findAll("div",{"class":("filmo-row odd","filmo-row even")})
+    
+    film_lists = [] # to append data
+    for container in containers:
+        title = container.a.text.strip() # assign title of film
+        movie_number_url = container.a['href'] # get data for movie number
+        number = extract_name_code(movie_number_url)
+        film_info = {"movie_number":number, 'Title':title}
+        film_lists.append(film_info)
+    return film_lists
+
+def save_movie_list(actor_number):
+    with open('kevin_project/actor_{}_movie_list.txt'.format(actor_number), 'w', encoding='utf-8') as fout:
+        writer = csv.writer(fout)  # write as csv file
+        movie_list = fetch_movie_list(actor_number)
+        for movie in movie_list:
+            # 3 data
+            row = [actor_number, movie['movie_number'],movie['Title']]
+            writer.writerow(row)
+
+def get_actor_number():
+    # get actor number
+    with open('kevin_project/actors_list_main.txt','r',encoding='utf-8') as fin:
+        reader = csv.reader(fin)
+        
+        reader = filter(None, reader)
+        for name, number in reader:
+            save_movie_list(number)
+            
+get_actor_number()
